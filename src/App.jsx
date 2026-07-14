@@ -20,6 +20,11 @@ const LOW_STOCK = 5;
 const cop = (n) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n || 0);
 
+const pts = (n) => `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 }).format(n || 0)} pts`;
+
+const MOVEMENT_LABEL = { recarga: "Recarga", ajuste: "Ajuste", compra: "Compra", redencion: "Redención" };
+const REQUEST_STATUS_LABEL = { pendiente: "Pendiente", confirmado: "Confirmado", rechazado: "Rechazado" };
+
 /* ---------------------------------------------------------
    Small UI primitives
 --------------------------------------------------------- */
@@ -261,6 +266,128 @@ function UserRoleModal({ initial, onClose, onSave }) {
 }
 
 /* ---------------------------------------------------------
+   Points system modals
+--------------------------------------------------------- */
+function AdjustPointsModal({ initial, onClose, onSave }) {
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const submit = (e) => {
+    e.preventDefault();
+    if (!amount || Number(amount) === 0) return;
+    onSave(Number(amount), note);
+  };
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4" style={{ background: "#1E2A2899" }}>
+      <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#fff" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-xl" style={{ color: "#1E2A28" }}>Ajustar puntos</h3>
+          <button onClick={onClose}><X size={18} color="#66756F" /></button>
+        </div>
+        <p className="text-sm mb-3" style={{ color: "#66756F" }}>{initial.name} · saldo actual: {pts(initial.points_balance)}</p>
+        <form onSubmit={submit} className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "#66756F" }}>Cantidad (usa negativo para quitar)</label>
+            <input required type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="ej. 50 o -20" className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #E1E0D9" }} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "#66756F" }}>Nota (opcional)</label>
+            <input value={note} onChange={(e) => setNote(e.target.value)} className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #E1E0D9" }} />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg text-sm font-semibold" style={{ border: "1px solid #E1E0D9", color: "#1E2A28" }}>Cancelar</button>
+            <button type="submit" className="flex-1 py-2 rounded-lg text-sm font-semibold" style={{ background: "#146356", color: "#fff" }}>Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function DigitalProductModal({ initial, onClose, onSave }) {
+  const [form, setForm] = useState(initial || { title: "", description: "", image_url: "", points_price: "", active: true });
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const submit = (e) => {
+    e.preventDefault();
+    if (!form.title.trim() || form.points_price === "") return;
+    onSave({ ...form, points_price: Number(form.points_price) });
+  };
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4" style={{ background: "#1E2A2899" }}>
+      <div className="w-full max-w-md rounded-2xl p-6" style={{ background: "#fff" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-xl" style={{ color: "#1E2A28" }}>{initial ? "Editar producto digital" : "Nuevo producto digital"}</h3>
+          <button onClick={onClose}><X size={18} color="#66756F" /></button>
+        </div>
+        <form onSubmit={submit} className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "#66756F" }}>Título</label>
+            <input required value={form.title} onChange={(e) => set("title", e.target.value)} className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #E1E0D9" }} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "#66756F" }}>URL de imagen</label>
+            <input value={form.image_url} onChange={(e) => set("image_url", e.target.value)} placeholder="https://…" className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #E1E0D9" }} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "#66756F" }}>Descripción</label>
+            <textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={2} className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid #E1E0D9" }} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold" style={{ color: "#66756F" }}>Valor en puntos</label>
+              <input required type="number" min="0" step="0.01" value={form.points_price} onChange={(e) => set("points_price", e.target.value)} className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #E1E0D9" }} />
+            </div>
+            <div className="flex items-end pb-2.5">
+              <label className="flex items-center gap-2 text-sm font-medium" style={{ color: "#1E2A28" }}>
+                <input type="checkbox" checked={form.active} onChange={(e) => set("active", e.target.checked)} /> Activo
+              </label>
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg text-sm font-semibold" style={{ border: "1px solid #E1E0D9", color: "#1E2A28" }}>Cancelar</button>
+            <button type="submit" className="flex-1 py-2 rounded-lg text-sm font-semibold" style={{ background: "#146356", color: "#fff" }}>Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function BuyPointsModal({ paymentInfo, onClose, onSave }) {
+  const [amount, setAmount] = useState("");
+  const [reference, setReference] = useState("");
+  const submit = (e) => {
+    e.preventDefault();
+    if (!amount || Number(amount) <= 0) return;
+    onSave(Number(amount), reference);
+  };
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4" style={{ background: "#1E2A2899" }}>
+      <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#fff" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-xl" style={{ color: "#1E2A28" }}>Comprar puntos</h3>
+          <button onClick={onClose}><X size={18} color="#66756F" /></button>
+        </div>
+        <div className="mb-4 p-3 rounded-lg text-xs leading-relaxed whitespace-pre-wrap" style={{ background: "#EFEDE4", color: "#66756F" }}>{paymentInfo}</div>
+        <form onSubmit={submit} className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "#66756F" }}>Puntos a comprar (1 punto = 1 USD)</label>
+            <input required type="number" min="1" step="1" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #E1E0D9" }} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold" style={{ color: "#66756F" }}>Referencia de la transferencia</label>
+            <input value={reference} onChange={(e) => setReference(e.target.value)} placeholder="ej. últimos dígitos, hora, comprobante" className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none" style={{ border: "1px solid #E1E0D9" }} />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg text-sm font-semibold" style={{ border: "1px solid #E1E0D9", color: "#1E2A28" }}>Cancelar</button>
+            <button type="submit" className="flex-1 py-2 rounded-lg text-sm font-semibold" style={{ background: "#146356", color: "#fff" }}>Enviar solicitud</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
    Main app
 --------------------------------------------------------- */
 export default function App() {
@@ -275,6 +402,14 @@ export default function App() {
   const [productModal, setProductModal] = useState(null);
   const [roleModal, setRoleModal] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [pointMovements, setPointMovements] = useState([]);
+  const [digitalProducts, setDigitalProducts] = useState([]);
+  const [purchaseRequests, setPurchaseRequests] = useState([]);
+  const [appSettings, setAppSettings] = useState({});
+  const [adjustPointsModal, setAdjustPointsModal] = useState(null);
+  const [digitalProductModal, setDigitalProductModal] = useState(null);
+  const [buyPointsModal, setBuyPointsModal] = useState(false);
+  const [brebeInfoDraft, setBrebeInfoDraft] = useState("");
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -296,6 +431,35 @@ export default function App() {
     if (!error) setProfiles(data || []);
   }, []);
 
+  const loadDigitalProducts = useCallback(async () => {
+    const { data, error } = await supabase.from("digital_products").select("*").order("created_at", { ascending: false });
+    if (!error) setDigitalProducts(data || []);
+  }, []);
+
+  const loadAppSettings = useCallback(async () => {
+    const { data, error } = await supabase.from("app_settings").select("*");
+    if (!error) {
+      const map = {};
+      (data || []).forEach((s) => { map[s.key] = s.value; });
+      setAppSettings(map);
+      setBrebeInfoDraft(map.brebe_info || "");
+    }
+  }, []);
+
+  const loadPointMovements = useCallback(async (userId, isAdmin) => {
+    let query = supabase.from("point_movements").select("*").order("created_at", { ascending: false });
+    if (!isAdmin) query = query.eq("profile_id", userId);
+    const { data, error } = await query;
+    if (!error) setPointMovements(data || []);
+  }, []);
+
+  const loadPurchaseRequests = useCallback(async (userId, isAdmin) => {
+    let query = supabase.from("point_purchase_requests").select("*").order("created_at", { ascending: false });
+    if (!isAdmin) query = query.eq("profile_id", userId);
+    const { data, error } = await query;
+    if (!error) setPurchaseRequests(data || []);
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -309,14 +473,23 @@ export default function App() {
     if (session?.user) {
       loadProfile(session.user.id);
       loadProducts();
+      loadDigitalProducts();
+      loadAppSettings();
     } else {
       setProfile(null);
     }
-  }, [session, loadProfile, loadProducts]);
+  }, [session, loadProfile, loadProducts, loadDigitalProducts, loadAppSettings]);
 
   useEffect(() => {
     if (profile?.role === "admin") loadProfiles();
   }, [profile, loadProfiles]);
+
+  useEffect(() => {
+    if (profile) {
+      loadPointMovements(profile.id, profile.role === "admin");
+      loadPurchaseRequests(profile.id, profile.role === "admin");
+    }
+  }, [profile, loadPointMovements, loadPurchaseRequests]);
 
   const logout = async () => { await supabase.auth.signOut(); setTab("dashboard"); };
 
@@ -342,10 +515,18 @@ export default function App() {
     );
   }
 
+  const redeemedTotal = pointMovements.filter((m) => m.type === "redencion").reduce((s, m) => s + Math.abs(m.amount), 0);
+  const activeDigitalProducts = digitalProducts.filter((p) => p.active);
+  const pendingRequests = purchaseRequests.filter((r) => r.status === "pendiente");
+
   const NAV = [
     { key: "dashboard", label: "Panel", icon: LayoutDashboard, show: true },
     { key: "products", label: role === "cliente" ? "Catálogo" : "Productos", icon: Package, show: true },
     { key: "users", label: "User", icon: Users, show: canManageUsers },
+    { key: "points", label: "Puntos", icon: DollarSign, show: canManageUsers },
+    { key: "digital", label: "Tienda digital", icon: Boxes, show: canManageUsers },
+    { key: "mypoints", label: "Mis puntos", icon: DollarSign, show: role === "cliente" },
+    { key: "store", label: "Canjear", icon: Boxes, show: role === "cliente" },
   ];
 
   return (
@@ -527,6 +708,217 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {tab === "points" && canManageUsers && (
+          <div>
+            <div className="mb-6">
+              <h1 className="font-display text-3xl" style={{ color: "#1E2A28" }}>Puntos</h1>
+              <p className="text-sm" style={{ color: "#66756F" }}>Recarga, quita y revisa el saldo de puntos de tus clientes.</p>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden mb-8" style={{ border: "1px solid #E1E0D9", background: "#fff" }}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ background: "#F6F5F1" }}>
+                    <th className="text-left px-4 py-3 font-semibold" style={{ color: "#66756F" }}>Cliente</th>
+                    <th className="text-left px-4 py-3 font-semibold" style={{ color: "#66756F" }}>Usuario</th>
+                    <th className="text-right px-4 py-3 font-semibold" style={{ color: "#66756F" }}>Saldo</th>
+                    <th className="text-right px-4 py-3 font-semibold" style={{ color: "#66756F" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {profiles.filter((u) => u.role === "cliente").map((u) => (
+                    <tr key={u.id} style={{ borderTop: "1px solid #F0EFE9" }}>
+                      <td className="px-4 py-3 font-medium" style={{ color: "#1E2A28" }}>{u.name}</td>
+                      <td className="px-4 py-3 font-mono text-xs" style={{ color: "#66756F" }}>{u.username}</td>
+                      <td className="px-4 py-3 text-right font-semibold" style={{ color: "#1E2A28" }}>{pts(u.points_balance)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => setAdjustPointsModal(u)} className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "#146356", color: "#fff" }}>Ajustar</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {profiles.filter((u) => u.role === "cliente").length === 0 && (
+                    <tr><td colSpan={4} className="px-4 py-4 text-sm" style={{ color: "#66756F" }}>Aún no hay clientes registrados.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <h2 className="font-display text-lg mb-3" style={{ color: "#1E2A28" }}>Solicitudes de compra pendientes</h2>
+            <div className="rounded-2xl overflow-hidden mb-8" style={{ border: "1px solid #E1E0D9", background: "#fff" }}>
+              {pendingRequests.length === 0 ? (
+                <p className="text-sm p-4" style={{ color: "#66756F" }}>No hay solicitudes pendientes.</p>
+              ) : (
+                pendingRequests.map((r) => {
+                  const clientProfile = profiles.find((p) => p.id === r.profile_id);
+                  return (
+                    <div key={r.id} className="flex items-center justify-between px-4 py-3 gap-3" style={{ borderBottom: "1px solid #F0EFE9" }}>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: "#1E2A28" }}>{clientProfile?.name || "Cliente"} · {pts(r.points_requested)}</p>
+                        <p className="text-xs" style={{ color: "#66756F" }}>Ref: {r.reference || "sin referencia"}</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          onClick={async () => {
+                            const { error } = await supabase.rpc("confirm_point_purchase", { p_request_id: r.id });
+                            if (error) showToast(error.message, "error"); else showToast("Compra confirmada, puntos acreditados");
+                            await Promise.all([loadPurchaseRequests(profile.id, true), loadProfiles(), loadPointMovements(profile.id, true)]);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "#146356", color: "#fff" }}
+                        >Confirmar</button>
+                        <button
+                          onClick={async () => {
+                            const { error } = await supabase.rpc("reject_point_purchase", { p_request_id: r.id });
+                            if (error) showToast(error.message, "error"); else showToast("Solicitud rechazada");
+                            await loadPurchaseRequests(profile.id, true);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ border: "1px solid #E1E0D9", color: "#1E2A28" }}
+                        >Rechazar</button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <h2 className="font-display text-lg mb-3" style={{ color: "#1E2A28" }}>Datos de pago (Bre-B)</h2>
+            <div className="rounded-2xl p-5" style={{ border: "1px solid #E1E0D9", background: "#fff" }}>
+              <textarea value={brebeInfoDraft} onChange={(e) => setBrebeInfoDraft(e.target.value)} rows={3} className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none" style={{ border: "1px solid #E1E0D9" }} placeholder="Llave Bre-B, nombre de la cuenta, banco…" />
+              <button
+                onClick={async () => {
+                  const { error } = await supabase.from("app_settings").upsert({ key: "brebe_info", value: brebeInfoDraft });
+                  if (error) showToast(error.message, "error"); else showToast("Datos de pago actualizados");
+                  await loadAppSettings();
+                }}
+                className="mt-3 px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: "#146356", color: "#fff" }}
+              >Guardar</button>
+            </div>
+          </div>
+        )}
+
+        {tab === "digital" && canManageUsers && (
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <h1 className="font-display text-3xl" style={{ color: "#1E2A28" }}>Tienda digital</h1>
+                <p className="text-sm" style={{ color: "#66756F" }}>{digitalProducts.length} producto(s) canjeables por puntos</p>
+              </div>
+              <button onClick={() => setDigitalProductModal({ mode: "new" })} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: "#146356", color: "#fff" }}>
+                <Plus size={15} /> Nuevo
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {digitalProducts.map((p) => (
+                <div key={p.id} className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid #E1E0D9" }}>
+                  {p.image_url && <img src={p.image_url} alt={p.title} className="w-full h-32 object-cover" />}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-2 gap-2">
+                      <p className="font-display text-lg" style={{ color: "#1E2A28" }}>{p.title}</p>
+                      {!p.active && <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0" style={{ background: "#EFEDE4", color: "#66756F" }}>Inactivo</span>}
+                    </div>
+                    <p className="text-sm mt-1" style={{ color: "#66756F" }}>{p.description}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <p className="font-display text-xl" style={{ color: "#146356" }}>{pts(p.points_price)}</p>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setDigitalProductModal({ mode: "edit", data: p })} className="p-1.5 rounded-lg hover:opacity-70"><Pencil size={14} color="#66756F" /></button>
+                        <button onClick={() => setConfirmDelete({ type: "digital_product", id: p.id, label: p.title })} className="p-1.5 rounded-lg hover:opacity-70"><Trash2 size={14} color="#C4453B" /></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {digitalProducts.length === 0 && <p className="text-sm" style={{ color: "#66756F" }}>Aún no has creado productos digitales.</p>}
+            </div>
+          </div>
+        )}
+
+        {tab === "mypoints" && role === "cliente" && (
+          <div>
+            <h1 className="font-display text-3xl mb-1" style={{ color: "#1E2A28" }}>Mis puntos</h1>
+            <p className="text-sm mb-6" style={{ color: "#66756F" }}>1 punto = 1 USD.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <StatCard icon={<DollarSign size={20} color="#146356" />} accent="#146356" label="Saldo actual" value={pts(profile.points_balance)} />
+              <StatCard icon={<Boxes size={20} color="#D98F3B" />} accent="#D98F3B" label="Puntos redimidos" value={pts(redeemedTotal)} />
+            </div>
+            <button onClick={() => setBuyPointsModal(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold mb-8" style={{ background: "#146356", color: "#fff" }}>
+              <Plus size={15} /> Comprar puntos
+            </button>
+
+            <h2 className="font-display text-lg mb-3" style={{ color: "#1E2A28" }}>Mis solicitudes de compra</h2>
+            <div className="rounded-2xl overflow-hidden mb-8" style={{ border: "1px solid #E1E0D9", background: "#fff" }}>
+              {purchaseRequests.length === 0 ? (
+                <p className="text-sm p-4" style={{ color: "#66756F" }}>Aún no has solicitado comprar puntos.</p>
+              ) : (
+                purchaseRequests.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #F0EFE9" }}>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: "#1E2A28" }}>{pts(r.points_requested)}</p>
+                      <p className="text-xs" style={{ color: "#66756F" }}>{new Date(r.created_at).toLocaleString("es-CO")}</p>
+                    </div>
+                    <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ background: "#EFEDE4", color: "#1E2A28" }}>{REQUEST_STATUS_LABEL[r.status]}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <h2 className="font-display text-lg mb-3" style={{ color: "#1E2A28" }}>Movimientos</h2>
+            <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #E1E0D9", background: "#fff" }}>
+              {pointMovements.length === 0 ? (
+                <p className="text-sm p-4" style={{ color: "#66756F" }}>Aún no tienes movimientos de puntos.</p>
+              ) : (
+                pointMovements.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #F0EFE9" }}>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: "#1E2A28" }}>{MOVEMENT_LABEL[m.type]}{m.note ? ` · ${m.note}` : ""}</p>
+                      <p className="text-xs" style={{ color: "#66756F" }}>{new Date(m.created_at).toLocaleString("es-CO")}</p>
+                    </div>
+                    <span className="text-sm font-bold" style={{ color: m.amount < 0 ? "#C4453B" : "#3D8361" }}>{m.amount > 0 ? "+" : ""}{pts(m.amount)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === "store" && role === "cliente" && (
+          <div>
+            <h1 className="font-display text-3xl mb-1" style={{ color: "#1E2A28" }}>Canjear puntos</h1>
+            <p className="text-sm mb-6" style={{ color: "#66756F" }}>Saldo disponible: {pts(profile.points_balance)}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeDigitalProducts.map((p) => {
+                const canAfford = profile.points_balance >= p.points_price;
+                return (
+                  <div key={p.id} className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: "1px solid #E1E0D9" }}>
+                    {p.image_url && <img src={p.image_url} alt={p.title} className="w-full h-32 object-cover" />}
+                    <div className="p-5">
+                      <p className="font-display text-lg" style={{ color: "#1E2A28" }}>{p.title}</p>
+                      <p className="text-sm mt-1" style={{ color: "#66756F" }}>{p.description}</p>
+                      <div className="flex items-center justify-between mt-3">
+                        <p className="font-display text-xl" style={{ color: "#146356" }}>{pts(p.points_price)}</p>
+                        <button
+                          disabled={!canAfford}
+                          onClick={async () => {
+                            const { error } = await supabase.rpc("redeem_digital_product", { p_product_id: p.id });
+                            if (error) showToast(error.message, "error");
+                            else {
+                              showToast("Producto canjeado");
+                              await Promise.all([loadProfile(profile.id), loadPointMovements(profile.id, false)]);
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                          style={{ background: "#146356", color: "#fff" }}
+                        >{canAfford ? "Canjear" : "Puntos insuficientes"}</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {activeDigitalProducts.length === 0 && <p className="text-sm" style={{ color: "#66756F" }}>Aún no hay productos disponibles para canjear.</p>}
+            </div>
+          </div>
+        )}
       </main>
 
       {productModal && (
@@ -560,6 +952,54 @@ export default function App() {
         />
       )}
 
+      {adjustPointsModal && (
+        <AdjustPointsModal
+          initial={adjustPointsModal}
+          onClose={() => setAdjustPointsModal(null)}
+          onSave={async (amount, note) => {
+            const { error } = await supabase.rpc("admin_adjust_points", {
+              p_profile_id: adjustPointsModal.id, p_amount: amount, p_note: note || null,
+            });
+            if (error) showToast(error.message, "error"); else showToast("Puntos ajustados");
+            await Promise.all([loadProfiles(), loadPointMovements(profile.id, true)]);
+            setAdjustPointsModal(null);
+          }}
+        />
+      )}
+
+      {digitalProductModal && (
+        <DigitalProductModal
+          initial={digitalProductModal.mode === "edit" ? digitalProductModal.data : null}
+          onClose={() => setDigitalProductModal(null)}
+          onSave={async (p) => {
+            if (digitalProductModal.mode === "edit") {
+              const { error } = await supabase.from("digital_products").update(p).eq("id", p.id);
+              if (error) showToast(error.message, "error"); else showToast("Producto digital actualizado");
+            } else {
+              const { error } = await supabase.from("digital_products").insert(p);
+              if (error) showToast(error.message, "error"); else showToast("Producto digital creado");
+            }
+            await loadDigitalProducts();
+            setDigitalProductModal(null);
+          }}
+        />
+      )}
+
+      {buyPointsModal && (
+        <BuyPointsModal
+          paymentInfo={appSettings.brebe_info || "Contacta al administrador para los datos de pago."}
+          onClose={() => setBuyPointsModal(false)}
+          onSave={async (amount, reference) => {
+            const { error } = await supabase.from("point_purchase_requests").insert({
+              profile_id: profile.id, points_requested: amount, reference: reference || null,
+            });
+            if (error) showToast(error.message, "error"); else showToast("Solicitud enviada, espera la confirmación del admin");
+            await loadPurchaseRequests(profile.id, false);
+            setBuyPointsModal(false);
+          }}
+        />
+      )}
+
       {confirmDelete && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4" style={{ background: "#1E2A2899" }}>
           <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: "#fff" }}>
@@ -569,9 +1009,10 @@ export default function App() {
               <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2 rounded-lg text-sm font-semibold" style={{ border: "1px solid #E1E0D9", color: "#1E2A28" }}>Cancelar</button>
               <button
                 onClick={async () => {
-                  const { error } = await supabase.from("products").delete().eq("id", confirmDelete.id);
-                  if (error) showToast(error.message, "error"); else showToast("Producto eliminado");
-                  await loadProducts();
+                  const table = confirmDelete.type === "digital_product" ? "digital_products" : "products";
+                  const { error } = await supabase.from(table).delete().eq("id", confirmDelete.id);
+                  if (error) showToast(error.message, "error"); else showToast(confirmDelete.type === "digital_product" ? "Producto digital eliminado" : "Producto eliminado");
+                  if (confirmDelete.type === "digital_product") await loadDigitalProducts(); else await loadProducts();
                   setConfirmDelete(null);
                 }}
                 className="flex-1 py-2 rounded-lg text-sm font-semibold" style={{ background: "#C4453B", color: "#fff" }}
