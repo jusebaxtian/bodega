@@ -345,7 +345,7 @@ export default function App() {
   const NAV = [
     { key: "dashboard", label: "Panel", icon: LayoutDashboard, show: true },
     { key: "products", label: role === "cliente" ? "Catálogo" : "Productos", icon: Package, show: true },
-    { key: "users", label: "Usuarios", icon: Users, show: canManageUsers },
+    { key: "users", label: "User", icon: Users, show: canManageUsers },
   ];
 
   return (
