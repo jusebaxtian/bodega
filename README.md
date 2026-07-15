@@ -55,8 +55,28 @@ No ejecuta ni modifica nada en Meta Ads — el usuario aplica los cambios él mi
 - 12/12 tests: condiciones aisladas, evaluador con reglas semilla, e integración completa
   verificando que no se duplican recomendaciones al re-evaluar.
 
-Próximos módulos: capa de IA (Módulo 4), dashboard con datos reales (Módulo 5) — ver el
-historial de la conversación de planificación para el detalle de cada uno.
+### Módulo 4 (Capa de IA)
+
+- La IA (Claude, vía Anthropic SDK) **nunca recibe las tablas crudas ni recalcula métricas**:
+  recibe un resumen ya armado por `summary_builder` (métricas actuales, tendencia vs. 7 días
+  atrás, reglas que dispararon, puntaje de campaña) y solo redacta el diagnóstico.
+  Ver el prompt exacto en `app/services/ai/prompts.py`.
+- Salida validada con Pydantic (`AIExplanationResult`): problema principal, gravedad, diagnóstico,
+  acciones inmediatas, acciones a 72h, confianza y explicación en lenguaje simple. Si el modelo
+  responde algo no parseable, se reintenta una vez y si vuelve a fallar se degrada a un mensaje
+  genérico — el endpoint nunca se rompe por un JSON inválido del LLM.
+- Caché simple: si ya existe una explicación de hoy para la entidad, no se vuelve a llamar al LLM.
+- Endpoints: `POST /api/v1/ai/explain` (`{entity_type: "ad", entity_id}`, por ahora solo a nivel
+  de anuncio), `GET /api/v1/ai/explanations/{entity_type}/{entity_id}`.
+- Frontend: `components/AIExplanationCard.tsx`, listo para insertarse en la vista de anuncio del
+  Módulo 5 (aún no hay una página de detalle de anuncio con datos reales donde montarlo).
+- 19/19 tests: parseo válido, reintento tras JSON inválido, degradación sin excepción, caché del
+  endpoint (el LLM fake se llama una sola vez aunque se pida el diagnóstico dos veces el mismo día).
+- **Pendiente de tu lado:** poner `ANTHROPIC_API_KEY` real en el `.env` del backend para que las
+  llamadas usen Claude de verdad en vez del cliente mockeado de los tests.
+
+Próximo módulo: dashboard con datos reales (Módulo 5) — ver el historial de la conversación de
+planificación para el detalle.
 
 ## Desarrollo local
 

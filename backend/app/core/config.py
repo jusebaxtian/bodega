@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # Clave Fernet para cifrar el access_token de Meta en reposo
     token_encryption_key: str = "BuuvlSwu6W7Z5egpexvmou5-8_ZMmRYP4l8x0aYb9P8="
 
+    # IA (Módulo 4) — la IA solo redacta el diagnóstico, no calcula métricas
+    anthropic_api_key: str = ""
+
     environment: str = "development"
 
 

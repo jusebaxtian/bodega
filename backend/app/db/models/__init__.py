@@ -1,4 +1,5 @@
 from app.db.models.ad_account import AdAccount
+from app.db.models.ai_explanation import AIExplanation
 from app.db.models.campaign import Ad, AdSet, Campaign
 from app.db.models.campaign_score import CampaignScore
 from app.db.models.insight_snapshot import InsightSnapshot
@@ -19,4 +20,5 @@ __all__ = [
     "Rule",
     "Recommendation",
     "CampaignScore",
+    "AIExplanation",
 ]
