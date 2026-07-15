@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
-export default function MetaCallbackPage() {
+function MetaCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +37,15 @@ export default function MetaCallbackPage() {
     })();
   }, [router, searchParams]);
 
+  return <p className="text-sm text-foreground/60">{error ?? "Conectando tu cuenta de Meta Ads..."}</p>;
+}
+
+export default function MetaCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-sm text-foreground/60">{error ?? "Conectando tu cuenta de Meta Ads..."}</p>
+      <Suspense fallback={<p className="text-sm text-foreground/60">Cargando...</p>}>
+        <MetaCallbackContent />
+      </Suspense>
     </div>
   );
 }
