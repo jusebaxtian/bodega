@@ -75,8 +75,27 @@ No ejecuta ni modifica nada en Meta Ads — el usuario aplica los cambios él mi
 - **Pendiente de tu lado:** poner `ANTHROPIC_API_KEY` real en el `.env` del backend para que las
   llamadas usen Claude de verdad en vez del cliente mockeado de los tests.
 
-Próximo módulo: dashboard con datos reales (Módulo 5) — ver el historial de la conversación de
-planificación para el detalle.
+### Módulo 5 (Dashboard con datos reales)
+
+- `dashboard_service.py` agrega lo que los módulos anteriores ya calcularon (snapshots más
+  recientes por anuncio, `campaign_scores`, `recommendations` pendientes) en dos vistas:
+  resumen general de la cuenta y detalle de una campaña. No repite ningún cálculo del motor de
+  reglas — solo lee y agrega.
+- Endpoints: `GET /api/v1/ad-accounts/{id}/dashboard-summary` (KPIs, ranking de mejores/críticas,
+  top 5 alertas) y `GET /api/v1/campaigns/{id}` (anuncios con sus métricas más recientes).
+- Frontend: `/` (resumen general con KPIs + ranking + alertas), `/campaigns` (listado con
+  puntaje y salud) y `/campaigns/[id]` (anuncios de la campaña + `AIExplanationCard` del
+  Módulo 4 al seleccionar uno).
+- **Simplificación conocida:** `/campaigns` hoy solo muestra las campañas que ya aparecen en el
+  ranking del resumen (mejores + críticas), no *todas* las campañas de la cuenta — para listar
+  el 100% haría falta un endpoint paginado dedicado, que queda como mejora natural del Módulo 6.
+- 21/21 tests en backend (incluye agregación de KPIs y ranking con datos fabricados a mano).
+- **No pude verificar el frontend en un navegador real**: este entorno no tiene Node.js/npm
+  instalado, así que el código de Next.js está escrito pero no compilado/ejecutado aquí — la
+  primera verificación real ocurre en el build de Vercel.
+
+Próximo módulo natural: alertas en tiempo real / historial de acciones aplicadas (lo que en el
+plan original era el Módulo 7), o refinar `/campaigns` para listar todas las campañas.
 
 ## Desarrollo local
 
