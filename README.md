@@ -35,8 +35,28 @@ No ejecuta ni modifica nada en Meta Ads — el usuario aplica los cambios él mi
   `META_APP_ID`/`META_APP_SECRET`/`TOKEN_ENCRYPTION_KEY` reales en el `.env` del backend para
   probar el flujo contra Meta de verdad.
 
-Próximos módulos: motor de reglas (Módulo 3), capa de IA (Módulo 4), dashboard con datos reales
-(Módulo 5) — ver el historial de la conversación de planificación para el detalle de cada uno.
+### Módulo 3 (Motor de reglas)
+
+- Modelo de datos: `rules` (condiciones configurables en JSON, `org_id = null` = regla global del
+  sistema), `recommendations` (una por entidad+regla, sin duplicar mientras esté `pending`),
+  `campaign_scores` (puntaje 0-100 + estado de salud, recalculado en cada sync).
+- Motor de condiciones (`rules_engine/conditions.py`): operadores `gt/lt/gte/lte`,
+  `decreased_by_pct` / `increased_by_pct` (compara contra N días atrás) y
+  `sustained_above_for_days` / `sustained_below_for_days` (ej. "CPL alto 3 días seguidos").
+  Si falta el dato de una métrica, la condición nunca dispara en falso positivo.
+- 3 reglas semilla (fatiga de anuncio, CPL sostenido alto, oportunidad de escalar), insertadas
+  automáticamente la primera vez que se evalúa una cuenta (`ensure_seed_rules`).
+- El motor se dispara automáticamente al final de cada sync exitoso (`sync_service` →
+  `evaluate_ad_account`), a nivel de anuncio, y agrega un puntaje por campaña.
+- Endpoints: `GET /api/v1/ad-accounts/{id}/recommendations`,
+  `POST /api/v1/recommendations/{id}/apply` (el usuario confirma que ya lo hizo él mismo en Ads
+  Manager — no ejecuta nada en Meta), `POST /api/v1/recommendations/{id}/dismiss`,
+  `GET /api/v1/ad-accounts/{id}/scores`, `GET/POST /api/v1/orgs/{id}/rules`.
+- 12/12 tests: condiciones aisladas, evaluador con reglas semilla, e integración completa
+  verificando que no se duplican recomendaciones al re-evaluar.
+
+Próximos módulos: capa de IA (Módulo 4), dashboard con datos reales (Módulo 5) — ver el
+historial de la conversación de planificación para el detalle de cada uno.
 
 ## Desarrollo local
 

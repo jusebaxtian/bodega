@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Ad, AdAccount, AdSet, Campaign, InsightSnapshot, SyncJob
 from app.services.meta_client import MetaClient
+from app.services.recommendation_service import evaluate_ad_account
 
 
 def _extract_conversions(actions: list[dict] | None) -> int:
@@ -121,6 +122,8 @@ def sync_ad_account(
 
                     for insight in meta_client.get_insights(ad_data["id"], since, until):
                         _upsert_insight(db, ad.id, insight)
+
+        evaluate_ad_account(db, ad_account)
 
         job.status = "success"
         job.finished_at = datetime.now(timezone.utc)
