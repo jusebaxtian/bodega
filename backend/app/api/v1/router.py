@@ -1,8 +1,10 @@
 from fastapi import APIRouter
 
-from app.api.v1 import health, me, orgs
+from app.api.v1 import ad_accounts, health, me, meta, orgs
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(health.router)
 api_router.include_router(me.router)
 api_router.include_router(orgs.router)
+api_router.include_router(meta.router)
+api_router.include_router(ad_accounts.router)

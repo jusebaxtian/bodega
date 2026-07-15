@@ -11,9 +11,14 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_jwt_secret: str
 
-    # Meta Ads (usado desde el Módulo 2 en adelante)
+    # Meta Ads (solo lectura: ads_read + business_management, nunca ads_management)
     meta_app_id: str = ""
     meta_app_secret: str = ""
+    meta_redirect_uri: str = "http://localhost:3000/integrations/meta/callback"
+    meta_api_version: str = "v21.0"
+
+    # Clave Fernet para cifrar el access_token de Meta en reposo
+    token_encryption_key: str = "BuuvlSwu6W7Z5egpexvmou5-8_ZMmRYP4l8x0aYb9P8="
 
     environment: str = "development"
 
